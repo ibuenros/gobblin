@@ -145,14 +145,16 @@ public class KafkaReporterTest extends KafkaTestBase {
 
     KafkaReporter.Metric metric = nextMetric(iterator);
 
-    Assert.assertEquals(1, Integer.parseInt(metric.value.toString()));
-    Assert.assertEquals(2, metric.tags.size());
-    Assert.assertTrue(metric.tags.containsKey(tag1.getKey()));
-    Assert.assertEquals(metric.tags.get(tag1.getKey()),
+    Assert.assertEquals(1, Integer.parseInt(metric.getValue().toString()));
+    Assert.assertEquals(2, metric.getTags().size());
+    Assert.assertTrue(metric.getTags().containsKey(tag1.getKey()));
+    Assert.assertEquals(metric.getTags().get(tag1.getKey()),
         tag1.getValue().toString());
-    Assert.assertTrue(metric.tags.containsKey(tag2.getKey()));
-    Assert.assertEquals(metric.tags.get(tag2.getKey()),
+    Assert.assertTrue(metric.getTags().containsKey(tag2.getKey()));
+    Assert.assertEquals(metric.getTags().get(tag2.getKey()),
         tag2.getValue().toString());
+
+    kafkaReporter.close();
   }
 
   @Test
@@ -175,11 +177,13 @@ public class KafkaReporterTest extends KafkaTestBase {
 
     KafkaReporter.Metric metric = nextMetric(iterator);
 
-    Assert.assertEquals(1, Integer.parseInt(metric.value.toString()));
-    Assert.assertEquals(1, metric.tags.size());
-    Assert.assertTrue(metric.tags.containsKey(tag1.getKey()));
-    Assert.assertEquals(metric.tags.get(tag1.getKey()),
+    Assert.assertEquals(1, Integer.parseInt(metric.getValue().toString()));
+    Assert.assertEquals(1, metric.getTags().size());
+    Assert.assertTrue(metric.getTags().containsKey(tag1.getKey()));
+    Assert.assertEquals(metric.getTags().get(tag1.getKey()),
         tag1.getValue().toString());
+
+    kafkaReporter.close();
 
   }
 
@@ -196,9 +200,9 @@ public class KafkaReporterTest extends KafkaTestBase {
     try {
       while(it.hasNext()) {
         KafkaReporter.Metric metric = nextMetric(it);
-        if (expected.containsKey(metric.name)) {
-          Assert.assertEquals(expected.get(metric.name), Double.parseDouble(metric.value.toString()));
-          expected.remove(metric.name);
+        if (expected.containsKey(metric.getName())) {
+          Assert.assertEquals(expected.get(metric.getName()), Double.parseDouble(metric.getValue().toString()));
+          expected.remove(metric.getName());
         }
       }
     } catch (ConsumerTimeoutException e) {
@@ -220,8 +224,8 @@ public class KafkaReporterTest extends KafkaTestBase {
       while(it.hasNext()) {
         KafkaReporter.Metric metric = nextMetric(it);
         //System.out.println(String.format("expectedSet.add(\"%s\")", metric.name));
-        if (expected.contains(metric.name)) {
-          expected.remove(metric.name);
+        if (expected.contains(metric.getName())) {
+          expected.remove(metric.getName());
         } else if (strict) {
           Assert.assertTrue(false, "Message present in kafka not expected: " + metric.toString());
         }

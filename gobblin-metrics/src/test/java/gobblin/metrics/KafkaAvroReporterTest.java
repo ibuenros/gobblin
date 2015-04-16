@@ -84,16 +84,16 @@ public class KafkaAvroReporterTest extends KafkaReporterTest {
     GenericRecord record = reader.read(reuse, decoder);
 
     KafkaReporter.Metric metric = new KafkaReporter.Metric();
-    metric.name = record.get("name").toString();
-    metric.value = record.get("value");
-    metric.tags = new HashMap<String, String>();
+    metric.setName(record.get("name").toString());
+    metric.setValue(record.get("value"));
+    metric.setTags(new HashMap<String, String>());
     if (record.get("tags") != null) {
       for (Map.Entry<Utf8, Utf8> tag : ((HashMap<Utf8, Utf8>)record.get("tags")).entrySet()) {
-        metric.tags.put(tag.getKey().toString(), tag.getValue().toString());
+        metric.getTags().put(tag.getKey().toString(), tag.getValue().toString());
       }
     }
 
-    System.out.println(String.format("%s:%s", metric.name, metric.value));
+    System.out.println(String.format("%s:%s", metric.getName(), metric.getValue()));
 
     return metric;
   }
