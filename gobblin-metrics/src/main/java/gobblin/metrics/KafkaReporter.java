@@ -11,6 +11,7 @@
 
 package gobblin.metrics;
 
+import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
@@ -230,10 +231,42 @@ public class KafkaReporter extends ScheduledReporter {
    * Class to contain a single metric.
    */
   public static class Metric {
-    public String name;
-    public Object value;
-    public Map<String, String> tags;
-    public long timestamp;
+    private String name;
+    private Object value;
+    private Map<String, String> tags;
+    private long timestamp;
+
+    public String getName() {
+      return name;
+    }
+
+    public void setName(String name) {
+      this.name = name;
+    }
+
+    public Object getValue() {
+      return value;
+    }
+
+    public void setValue(Object value) {
+      this.value = value;
+    }
+
+    public Map<String, String> getTags() {
+      return tags;
+    }
+
+    public void setTags(Map<String, String> tags) {
+      this.tags = tags;
+    }
+
+    public long getTimestamp() {
+      return timestamp;
+    }
+
+    public void setTimestamp(long timestamp) {
+      this.timestamp = timestamp;
+    }
   }
 
   @Override
@@ -375,7 +408,7 @@ public class KafkaReporter extends ScheduledReporter {
   protected byte[] serializeValue(String name, Object value, String... path) {
     String str = stringifyValue(name, value, path);
     if(!Strings.isNullOrEmpty(str)) {
-      return str.getBytes();
+      return str.getBytes(Charset.forName("UTF-8"));
     } else {
       return null;
     }
@@ -390,10 +423,10 @@ public class KafkaReporter extends ScheduledReporter {
    */
   protected synchronized  String stringifyValue(String name, Object value, String... path) {
     Metric metric = new Metric();
-    metric.name = MetricRegistry.name(name, path);
-    metric.value = value;
-    metric.tags = tags;
-    metric.timestamp = System.currentTimeMillis();
+    metric.setName(MetricRegistry.name(name, path));
+    metric.setValue(value);
+    metric.setTags(this.tags);
+    metric.setTimestamp(System.currentTimeMillis());
 
     try {
       return mapper.writeValueAsString(metric);
