@@ -49,7 +49,8 @@ public class UnGzipConverterTest {
 
     String fullPath = getClass().getClassLoader().getResource(filePath).getFile();
     FileAwareInputStream fileAwareInputStream =
-        new FileAwareInputStream(CopyableFileUtils.getTestCopyableFile(filePath), fs.open(new Path(fullPath)));
+        FileAwareInputStream.builder().file(CopyableFileUtils.getTestCopyableFile(filePath)).
+            inputStream(fs.open(new Path(fullPath))).build();
 
     Iterable<FileAwareInputStream> iterable =
         converter.convertRecord("outputSchema", fileAwareInputStream, new WorkUnitState());

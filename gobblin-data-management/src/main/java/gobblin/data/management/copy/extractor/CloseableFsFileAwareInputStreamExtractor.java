@@ -11,6 +11,7 @@
  */
 package gobblin.data.management.copy.extractor;
 
+import gobblin.configuration.WorkUnitState;
 import gobblin.data.management.copy.CopyableFile;
 import gobblin.source.extractor.extract.sftp.SftpLightWeightFileSystem;
 
@@ -29,10 +30,10 @@ public class CloseableFsFileAwareInputStreamExtractor extends FileAwareInputStre
 
   private final Closer closer = Closer.create();
 
-  public CloseableFsFileAwareInputStreamExtractor(FileSystem fs, CopyableFile file)
+  public CloseableFsFileAwareInputStreamExtractor(FileSystem fs, CopyableFile file, WorkUnitState state)
       throws IOException {
 
-    super(fs, file);
+    super(fs, file, state);
     closer.register(fs);
   }
 

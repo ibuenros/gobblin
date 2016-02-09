@@ -11,6 +11,7 @@
  */
 package gobblin.data.management.copy.extractor;
 
+import gobblin.configuration.WorkUnitState;
 import gobblin.data.management.copy.CopyConfiguration;
 import gobblin.data.management.copy.CopyContext;
 import gobblin.data.management.copy.CopyableFile;
@@ -35,7 +36,7 @@ public class InputStreamExtractorTest {
     CopyableFile file = getTestCopyableFile("inputStreamExtractorTest/first.txt");
 
     FileAwareInputStreamExtractor extractor =
-        new FileAwareInputStreamExtractor(FileSystem.getLocal(new Configuration()), file);
+        new FileAwareInputStreamExtractor(FileSystem.getLocal(new Configuration()), file, new WorkUnitState());
 
     FileAwareInputStream fileAwareInputStream = extractor.readRecord(null);
 

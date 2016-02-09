@@ -54,7 +54,7 @@ import com.google.gson.reflect.TypeToken;
 @AllArgsConstructor(access = AccessLevel.PROTECTED)
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 @EqualsAndHashCode
-@Builder(builderClassName = "Builder", builderMethodName = "_hiddenBuilder")
+@Builder(builderClassName = "Builder", builderMethodName = "_hiddenBuilder", toBuilder=true)
 public class CopyableFile implements File, HasGuid {
 
   private static final Gson GSON = new Gson();
@@ -319,6 +319,22 @@ public class CopyableFile implements File, HasGuid {
    */
   public DatasetAndPartition getDatasetAndPartition(CopyableDatasetMetadata metadata) {
     return new DatasetAndPartition(metadata, getFileSet());
+  }
+
+  /**
+   * @return desired block size for destination file.
+   */
+  public long getBlockSize(FileSystem targetFs) {
+    return getPreserve().preserve(PreserveAttributes.Option.BLOCK_SIZE) ?
+        getOrigin().getBlockSize() : targetFs.getDefaultBlockSize(this.destination);
+  }
+
+  /**
+   * @return desired replication for destination file.
+   */
+  public short getReplication(FileSystem targetFs) {
+    return getPreserve().preserve(PreserveAttributes.Option.REPLICATION) ?
+        getOrigin().getReplication() : targetFs.getDefaultReplication(this.destination);
   }
 
   /**

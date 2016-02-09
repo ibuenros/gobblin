@@ -12,14 +12,17 @@
 
 package gobblin.data.management.copy.extractor;
 
+import gobblin.configuration.WorkUnitState;
 import gobblin.data.management.copy.CopyableFile;
 import gobblin.data.management.copy.FileAwareInputStream;
+import gobblin.data.management.copy.splitter.DistcpFileSplitter;
 import gobblin.source.extractor.DataRecordException;
 import gobblin.source.extractor.Extractor;
 
 import java.io.IOException;
 import java.io.InputStream;
 
+import org.apache.hadoop.fs.FSDataInputStream;
 import org.apache.hadoop.fs.FileSystem;
 
 
@@ -39,12 +42,13 @@ public class FileAwareInputStreamExtractor implements Extractor<String, FileAwar
   private final CopyableFile file;
   /** True indicates the unique record has already been read. */
   private boolean recordRead;
+  private WorkUnitState workUnit;
 
-  public FileAwareInputStreamExtractor(FileSystem fs, CopyableFile file) throws IOException {
-
+  public FileAwareInputStreamExtractor(FileSystem fs, CopyableFile file, WorkUnitState workUnit) throws IOException {
     this.fs = fs;
     this.file = file;
     this.recordRead = false;
+    this.workUnit = workUnit;
   }
 
   /**
@@ -62,7 +66,13 @@ public class FileAwareInputStreamExtractor implements Extractor<String, FileAwar
 
     if (!this.recordRead) {
       this.recordRead = true;
-      return new FileAwareInputStream(this.file, fs.open(this.file.getFileStatus().getPath()));
+      FSDataInputStream is = fs.open(this.file.getFileStatus().getPath());
+      FileAwareInputStream.FileAwareInputStreamBuilder builder =
+          FileAwareInputStream.builder().file(this.file).inputStream(is);
+      if (DistcpFileSplitter.isSplitWorkUnit(this.workUnit)) {
+        builder.split(DistcpFileSplitter.getSplit(this.workUnit));
+      }
+      return builder.build();
     } else {
       return null;
     }

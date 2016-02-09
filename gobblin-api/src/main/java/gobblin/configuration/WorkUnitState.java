@@ -304,6 +304,11 @@ public class WorkUnitState extends State {
     return super.toString() + "\nWorkUnit: " + getWorkunit().toString() + "\nExtract: " + getExtract().toString();
   }
 
+  @Override public void removeProp(String key) {
+    super.removeProp(key);
+    this.workunit.removeProp(key);
+  }
+
   /**
    * Adds all properties from {@link gobblin.configuration.State} to this {@link gobblin.configuration.WorkUnitState}.
    *

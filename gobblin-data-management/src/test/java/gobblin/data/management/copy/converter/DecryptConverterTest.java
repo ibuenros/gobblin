@@ -65,7 +65,8 @@ public class DecryptConverterTest {
 
       String gpgFilePath =url.getFile();
       FileAwareInputStream fileAwareInputStream =
-          new FileAwareInputStream(CopyableFileUtils.getTestCopyableFile(), fs.open(new Path(gpgFilePath)));
+          FileAwareInputStream.builder().file(CopyableFileUtils.getTestCopyableFile()).
+              inputStream(fs.open(new Path(gpgFilePath))).build();
 
       Iterable<FileAwareInputStream> iterable =
           converter.convertRecord("outputSchema", fileAwareInputStream, workUnitState);

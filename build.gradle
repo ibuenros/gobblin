@@ -179,7 +179,7 @@ ext.externalDependency = [
   "scala": "org.scala-lang:scala-library:2.11.6",
   "influxdbJava": "org.influxdb:influxdb-java:1.5",
   "libthrift":"org.apache.thrift:libthrift:0.9.3",
-  "lombok":"org.projectlombok:lombok:1.16.4",
+  "lombok":"org.projectlombok:lombok:1.16.6",
   "mockRunnerJdbc":"com.mockrunner:mockrunner-jdbc:1.0.8",
   "xerces":"xerces:xercesImpl:2.11.0",
   "typesafeConfig": "com.typesafe:config:1.2.1",

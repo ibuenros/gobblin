@@ -21,6 +21,7 @@ import gobblin.data.management.copy.FileAwareInputStream;
 import gobblin.data.management.copy.OwnerAndPermission;
 import gobblin.data.management.copy.PreserveAttributes;
 import gobblin.data.management.copy.recovery.RecoveryHelper;
+import gobblin.data.management.copy.splitter.DistcpFileSplitter;
 import gobblin.state.ConstructState;
 import gobblin.util.FinalState;
 import gobblin.util.PathUtils;
@@ -105,7 +106,7 @@ public class FileAwareInputStreamDataWriter implements DataWriter<FileAwareInput
     Path stagingFile = getStagingFilePath(copyableFile);
     this.actualProcessedCopyableFile = Optional.of(copyableFile);
     this.fs.mkdirs(stagingFile.getParent());
-    writeImpl(fileAwareInputStream.getInputStream(), stagingFile, copyableFile);
+    writeImpl(fileAwareInputStream.getInputStream(), stagingFile, copyableFile, fileAwareInputStream);
     this.filesWritten.incrementAndGet();
   }
 
@@ -122,14 +123,23 @@ public class FileAwareInputStreamDataWriter implements DataWriter<FileAwareInput
    * @param inputStream {@link FSDataInputStream} whose contents should be written to staging path.
    * @param writeAt {@link Path} at which contents should be written.
    * @param copyableFile {@link CopyableFile} that generated this copy operation.
+   * @param record The actual {@link FileAwareInputStream} passed to the write method.
    * @throws IOException
    */
-  protected void writeImpl(FSDataInputStream inputStream, Path writeAt, CopyableFile copyableFile) throws IOException {
+  protected void writeImpl(FSDataInputStream inputStream, Path writeAt, CopyableFile copyableFile,
+      FileAwareInputStream record) throws IOException {
 
-    final short replication = copyableFile.getPreserve().preserve(PreserveAttributes.Option.REPLICATION) ?
-        copyableFile.getOrigin().getReplication() : fs.getDefaultReplication(writeAt);
-    final long blockSize = copyableFile.getPreserve().preserve(PreserveAttributes.Option.BLOCK_SIZE) ?
-        copyableFile.getOrigin().getBlockSize() : fs.getDefaultBlockSize(writeAt);
+    final short replication = copyableFile.getReplication(this.fs);
+    final long blockSize = copyableFile.getBlockSize(this.fs);
+    long maxBytes = Long.MAX_VALUE;
+    // Whether writer must write EXACTLY maxBytes.
+    boolean mustMatchMaxBytes = false;
+
+    if (record.getSplit().isPresent()) {
+      inputStream.seek(record.getSplit().get().getLowPosition());
+      maxBytes = record.getSplit().get().getHighPosition() - record.getSplit().get().getLowPosition();
+      mustMatchMaxBytes = !record.getSplit().get().isLastSplit();
+    }
 
     Predicate<FileStatus> fileStatusAttributesFilter = new Predicate<FileStatus>() {
       @Override public boolean apply(FileStatus input) {
@@ -147,7 +157,11 @@ public class FileAwareInputStreamDataWriter implements DataWriter<FileAwareInput
       FSDataOutputStream os =
           this.fs.create(writeAt, true, fs.getConf().getInt("io.file.buffer.size", 4096), replication, blockSize);
       try {
-        this.bytesWritten.addAndGet(StreamUtils.copy(inputStream, os));
+        long bytesWrittenToFile = StreamUtils.copy(inputStream, os, maxBytes);
+        if (mustMatchMaxBytes && bytesWrittenToFile != maxBytes) {
+          throw new IOException(String.format("Incomplete write: expected %d, wrote %d bytes.", maxBytes, bytesWrittenToFile));
+        }
+        this.bytesWritten.addAndGet(bytesWrittenToFile);
         log.info("bytes written: " + this.bytesWritten.get() + " for file " + copyableFile);
       } finally {
         os.close();
@@ -164,7 +178,12 @@ public class FileAwareInputStreamDataWriter implements DataWriter<FileAwareInput
   }
 
   protected Path getStagingFilePath(CopyableFile file) {
-    return new Path(this.stagingDir, file.getDestination().getName());
+    if (DistcpFileSplitter.isSplitWorkUnit(this.state)) {
+      return new Path(this.stagingDir, DistcpFileSplitter.getSplit(this.state).get().getPartName());
+    } else {
+      return new Path(this.stagingDir, file.getDestination().getName());
+    }
+
   }
 
   protected static Path getPartitionOutputRoot(Path outputDir,
@@ -173,9 +192,35 @@ public class FileAwareInputStreamDataWriter implements DataWriter<FileAwareInput
   }
 
   public static Path getOutputFilePath(CopyableFile file, Path outputDir,
-      CopyableFile.DatasetAndPartition datasetAndPartition) {
+      CopyableFile.DatasetAndPartition datasetAndPartition, State workUnit) {
     return new Path(getPartitionOutputRoot(outputDir, datasetAndPartition),
         PathUtils.withoutLeadingSeparator(file.getDestination()));
+  }
+
+  public static Path getOutputFilePath(State wu) throws IOException {
+    CopyableFile file = CopySource.deserializeCopyableFile(wu);
+    Path outputDir = getOutputDir(wu);
+    CopyableDatasetMetadata metadata = CopySource.deserializeCopyableDataset(wu);
+    return getOutputFilePath(file, outputDir,
+        file.getDatasetAndPartition(metadata), wu);
+  }
+
+  public static Path getSplitOutputFilePath(State wu) throws IOException {
+    if (DistcpFileSplitter.isSplitWorkUnit(wu)) {
+      return new Path(getOutputFilePath(wu).getParent(), DistcpFileSplitter.getSplit(wu).get().getPartName());
+    } else {
+      return getOutputFilePath(wu);
+    }
+  }
+
+  public static Path getSplitOutputFilePath(CopyableFile file, Path outputDir,
+      CopyableFile.DatasetAndPartition datasetAndPartition, State workUnit) throws IOException {
+    if (DistcpFileSplitter.isSplitWorkUnit(workUnit)) {
+      return new Path(getOutputFilePath(file, outputDir, datasetAndPartition, workUnit).getParent(),
+          DistcpFileSplitter.getSplit(workUnit).get().getPartName());
+    } else {
+      return getOutputFilePath(file, outputDir, datasetAndPartition, workUnit);
+    }
   }
 
   public static Path getOutputDir(State state) {
@@ -278,8 +323,8 @@ public class FileAwareInputStreamDataWriter implements DataWriter<FileAwareInput
 
     CopyableFile copyableFile = this.actualProcessedCopyableFile.get();
     Path stagingFilePath = getStagingFilePath(copyableFile);
-    Path outputFilePath = getOutputFilePath(copyableFile, this.outputDir,
-        copyableFile.getDatasetAndPartition(this.copyableDatasetMetadata));
+    Path outputFilePath = getSplitOutputFilePath(copyableFile, this.outputDir,
+        copyableFile.getDatasetAndPartition(this.copyableDatasetMetadata), this.state);
 
     log.info(String.format("Committing data from %s to %s", stagingFilePath, outputFilePath));
     try {

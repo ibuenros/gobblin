@@ -81,7 +81,8 @@ public class FileAwareInputStreamDataWriterTest {
 
     FileAwareInputStreamDataWriter dataWriter = new FileAwareInputStreamDataWriter(state, 1, 0);
 
-    FileAwareInputStream fileAwareInputStream = new FileAwareInputStream(cf, StreamUtils.convertStream(IOUtils.toInputStream(streamString)));
+    FileAwareInputStream fileAwareInputStream = FileAwareInputStream.builder().file(cf).
+        inputStream(StreamUtils.convertStream(IOUtils.toInputStream(streamString))).build();
     dataWriter.write(fileAwareInputStream);
     dataWriter.commit();
     Path writtenFilePath = new Path(new Path(state.getProp(ConfigurationKeys.WRITER_OUTPUT_DIR),

@@ -18,6 +18,7 @@ import gobblin.configuration.State;
 import gobblin.configuration.WorkUnitState;
 import gobblin.data.management.copy.extractor.FileAwareInputStreamExtractor;
 import gobblin.data.management.copy.publisher.CopyEventSubmitterHelper;
+import gobblin.data.management.copy.splitter.DistcpFileSplitter;
 import gobblin.data.management.dataset.Dataset;
 import gobblin.data.management.dataset.DatasetUtils;
 import gobblin.data.management.partition.FileSet;
@@ -216,7 +217,7 @@ public class CopySource extends AbstractSource<String, FileAwareInputStream> {
             workUnit.setProp(SlaEventKeys.DATASET_URN_KEY, this.copyableDataset.datasetRoot());
             workUnit.setProp(SlaEventKeys.PARTITION_KEY, copyableFile.getFileSet());
             computeAndSetWorkUnitGuid(workUnit);
-            workUnitsForPartition.add(workUnit);
+            workUnitsForPartition.addAll(DistcpFileSplitter.splitFile(copyableFile, workUnit, targetFs));
           }
           this.workUnitList.addFileSet(fileSet, workUnitsForPartition);
         }
@@ -237,7 +238,7 @@ public class CopySource extends AbstractSource<String, FileAwareInputStream> {
 
     CopyableFile copyableFile = deserializeCopyableFile(state);
 
-    return new FileAwareInputStreamExtractor(getSourceFileSystem(state), copyableFile);
+    return new FileAwareInputStreamExtractor(getSourceFileSystem(state), copyableFile, state);
   }
 
   @Override

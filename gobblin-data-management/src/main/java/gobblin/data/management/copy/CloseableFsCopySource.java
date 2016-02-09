@@ -69,7 +69,7 @@ public class CloseableFsCopySource extends CopySource {
 
     CopyableFile copyableFile = deserializeCopyableFile(state);
 
-    return new CloseableFsFileAwareInputStreamExtractor(getSourceFileSystem(state), copyableFile);
+    return new CloseableFsFileAwareInputStreamExtractor(getSourceFileSystem(state), copyableFile, state);
   }
 
 }

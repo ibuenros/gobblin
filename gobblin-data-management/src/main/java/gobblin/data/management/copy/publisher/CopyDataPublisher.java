@@ -34,6 +34,7 @@ import gobblin.data.management.copy.CopySource;
 import gobblin.data.management.copy.CopyableDataset;
 import gobblin.data.management.copy.CopyableDatasetMetadata;
 import gobblin.data.management.copy.recovery.RecoveryHelper;
+import gobblin.data.management.copy.splitter.DistcpFileSplitter;
 import gobblin.data.management.copy.writer.FileAwareInputStreamDataWriter;
 import gobblin.data.management.copy.CopyableFile;
 import gobblin.data.management.copy.writer.FileAwareInputStreamDataWriterBuilder;
@@ -146,6 +147,9 @@ public class CopyDataPublisher extends DataPublisher implements UnpublishedHandl
         datasetWorkUnitStates.iterator().next().getProp(CopySource.SERIALIZED_COPYABLE_DATASET));
     Path datasetWriterOutputPath = new Path(this.writerOutputDir, datasetAndPartition.identifier());
 
+    log.info("Merging all split work units.");
+    DistcpFileSplitter.mergeAllSplitWorkUnits(this.fs, datasetWorkUnitStates);
+
     log.info(String
         .format("Publishing fileSet from %s to %s", datasetWriterOutputPath, metadata.getDatasetTargetRoot()));
 
@@ -187,10 +191,7 @@ public class CopyDataPublisher extends DataPublisher implements UnpublishedHandl
     for (WorkUnitState wu : workUnitStates) {
       if (wu.getWorkingState() == WorkingState.SUCCESSFUL) {
         CopyableFile file = CopySource.deserializeCopyableFile(wu);
-        Path outputDir = FileAwareInputStreamDataWriter.getOutputDir(wu);
-        CopyableDatasetMetadata metadata = CopySource.deserializeCopyableDataset(wu);
-        Path outputPath = FileAwareInputStreamDataWriter.getOutputFilePath(file, outputDir,
-            file.getDatasetAndPartition(metadata));
+        Path outputPath = FileAwareInputStreamDataWriter.getOutputFilePath(wu);
         if (recoveryHelper.persistFile(wu, file, outputPath)) {
           filesPersisted++;
         }

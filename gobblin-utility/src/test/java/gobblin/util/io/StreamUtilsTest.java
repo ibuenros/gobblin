@@ -15,7 +15,11 @@ package gobblin.util.io;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.isIn;
 
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.util.Arrays;
+import java.util.Random;
 import java.util.Set;
 import java.util.UUID;
 
@@ -33,6 +37,7 @@ import org.apache.hadoop.fs.Path;
 import org.hamcrest.MatcherAssert;
 import org.hamcrest.Matchers;
 
+import org.testng.Assert;
 import org.testng.annotations.Test;
 
 
@@ -131,5 +136,26 @@ public class StreamUtilsTest {
         localFs.delete(testOutFile, true);
       }
     }
+  }
+
+  @Test
+  public void testCopy() throws IOException {
+    int bytesToCopy = 100;
+
+    byte[] input = new byte[bytesToCopy * 5];
+    (new Random()).nextBytes(input);
+
+    ByteArrayInputStream is = new ByteArrayInputStream(input);
+    ByteArrayOutputStream os = new ByteArrayOutputStream();
+
+    StreamUtils.copy(is, os, Long.MAX_VALUE);
+    Assert.assertEquals(os.toByteArray(), input);
+
+    is.reset();
+    os.reset();
+
+    StreamUtils.copy(is, os, bytesToCopy);
+    Assert.assertEquals(os.size(), bytesToCopy);
+    Assert.assertEquals(os.toByteArray(), Arrays.copyOf(input, bytesToCopy));
   }
 }

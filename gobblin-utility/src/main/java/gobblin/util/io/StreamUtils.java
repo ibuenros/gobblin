@@ -70,13 +70,13 @@ public class StreamUtils {
    *
    * @return Total bytes copied
    */
-  public static long copy(InputStream is, OutputStream os)
+  public static long copy(InputStream is, OutputStream os, long maxBytes)
       throws IOException {
 
     final ReadableByteChannel inputChannel = Channels.newChannel(is);
     final WritableByteChannel outputChannel = Channels.newChannel(os);
 
-    long totalBytesCopied = copy(inputChannel, outputChannel);
+    long totalBytesCopied = copy(inputChannel, outputChannel, maxBytes);
 
     inputChannel.close();
     outputChannel.close();
@@ -92,20 +92,28 @@ public class StreamUtils {
    *
    * @return Total bytes copied
    */
-  public static long copy(ReadableByteChannel inputChannel, WritableByteChannel outputChannel)
+  public static long copy(ReadableByteChannel inputChannel, WritableByteChannel outputChannel, long maxBytes)
       throws IOException {
 
     long bytesRead = 0;
     long totalBytesRead = 0;
     final ByteBuffer buffer = ByteBuffer.allocateDirect(DEFAULT_BUFFER_SIZE);
-    while ((bytesRead = inputChannel.read(buffer)) != -1) {
+
+    while (maxBytes > totalBytesRead && (bytesRead = inputChannel.read(buffer)) != -1) {
       totalBytesRead += bytesRead;
       // flip the buffer to be written
       buffer.flip();
+
+      // If we've read more than maxBytes, discard enough bytes to only write maxBytes.
+      if (totalBytesRead > maxBytes) {
+        buffer.limit(buffer.limit() - (int) (totalBytesRead - maxBytes));
+      }
+
       outputChannel.write(buffer);
       // Clear if empty
       buffer.compact();
     }
+
     // Done writing, now flip to read again
     buffer.flip();
     // check that buffer is fully written.

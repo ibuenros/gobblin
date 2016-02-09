@@ -12,22 +12,35 @@
 
 package gobblin.data.management.copy;
 
-import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Getter;
+import lombok.NonNull;
 
 import org.apache.hadoop.fs.FSDataInputStream;
+
+import com.google.common.base.Optional;
+
+import gobblin.data.management.copy.splitter.DistcpFileSplitter;
 
 
 /**
  * A wrapper to {@link FSDataInputStream} that represents an entity to be copied. The enclosed {@link CopyableFile} instance
  * contains file Metadata like permission, destination path etc. required by the writers and converters.
  */
-@AllArgsConstructor
 @Getter
 public class FileAwareInputStream {
 
   private CopyableFile file;
   private FSDataInputStream inputStream;
+  private Optional<DistcpFileSplitter.Split> split = Optional.absent();
+
+  @Builder(toBuilder = true)
+  public FileAwareInputStream(@NonNull CopyableFile file, @NonNull FSDataInputStream inputStream,
+      Optional<DistcpFileSplitter.Split> split) {
+    this.file = file;
+    this.inputStream = inputStream;
+    this.split = split == null ? Optional.<DistcpFileSplitter.Split>absent() : split;
+  }
 
   @Override
   public String toString() {

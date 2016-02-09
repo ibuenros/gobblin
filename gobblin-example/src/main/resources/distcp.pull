@@ -11,6 +11,8 @@ data.publisher.final.dir=/tmp/gobblin-copy
 gobblin.dataset.profile.class=gobblin.data.management.copy.CopyableGlobDatasetFinder
 gobblin.dataset.pattern=${env:HOME}/gobblin-copy
 
+gobblin.copy.file.max.split.size=33554432
+
 # ====================================================================
 # Distcp configurations (do not change)
 # ====================================================================
