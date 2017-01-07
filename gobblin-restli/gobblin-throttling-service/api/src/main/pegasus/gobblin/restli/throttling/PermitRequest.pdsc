@@ -1,0 +1,11 @@
+{
+  "name": "PermitRequest",
+  "type": "record",
+  "namespace": "gobblin.restli.throttling",
+  "fields": [
+    {"name": "resource", "type": "string"},
+    {"name": "permits", "type": "long"},
+    {"name": "minimumPermits", "type": ["int", "null"]},
+    {"name": "requestorIdentifier", "type": "string"}
+  ]
+}

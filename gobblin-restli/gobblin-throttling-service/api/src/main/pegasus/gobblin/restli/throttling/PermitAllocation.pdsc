@@ -1,0 +1,9 @@
+{
+  "name": "PermitAllocation",
+  "type": "record",
+  "namespace": "gobblin.restli.throttling",
+  "fields": [
+    {"name": "permits", "type": "long"},
+    {"name": "expiration", "type": "long"}
+  ]
+}

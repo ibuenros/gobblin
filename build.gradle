@@ -31,17 +31,26 @@ File getEnvironmentScript() {
 
 apply from: environmentScript
 
+
+
 buildscript {
   repositories {
     maven {
       url "https://plugins.gradle.org/m2/"
     }
+    mavenCentral()
   }
+
+  if (!project.hasProperty('pegasusVersion')) {
+    project.ext.pegasusVersion = '2.6.0'
+  }
+
   dependencies {
     classpath 'gradle.plugin.org.inferred:gradle-processors:1.1.2'
     classpath 'org.kt3k.gradle.plugin:coveralls-gradle-plugin:1.0.2'
     classpath 'gradle.plugin.com.palantir:jacoco-coverage:0.3.0'
     classpath 'io.spring.gradle:dependency-management-plugin:0.5.4.RELEASE'
+    classpath group: 'com.linkedin.pegasus', name: 'gradle-plugins', version: project.ext.pegasusVersion
   }
 }
 
@@ -62,8 +71,8 @@ def BuildProperties BUILD_PROPERTIES = new BuildProperties(project)
     .register(new BuildProperty("gobblinFlavor", "standard", "Build flavor (see http://gobblin.readthedocs.io/en/latest/developer-guide/GobblinModules/)"))
     .register(new BuildProperty("hadoopVersion", "2.3.0", "Hadoop dependencies version"))
     .register(new BuildProperty("hiveVersion", "1.0.1", "Hive dependencies version"))
-    .register(new BuildProperty("jdkVersion", JavaVersion.VERSION_1_7.toString(), 
-                                "Java languange compatibility; one of " + JavaVersion.VERSION_1_7 + ", " + 
+    .register(new BuildProperty("jdkVersion", JavaVersion.VERSION_1_7.toString(),
+                                "Java languange compatibility; one of " + JavaVersion.VERSION_1_7 + ", " +
                                 JavaVersion.VERSION_1_8))
     .register(new BuildProperty("kafka08Version", "0.8.2.2", "Kafka 0.8 dependencies version"))
     .register(new BuildProperty("kafka09Version", "0.9.0.1", "Kafka 0.9 dependencies version"))
@@ -325,7 +334,8 @@ ext.externalDependency = [
     "restliCommon" : "com.linkedin.pegasus:restli-common:" + pegasusVersion,
     "r2" : "com.linkedin.pegasus:r2:" + pegasusVersion,
     "d2" : "com.linkedin.pegasus:d2:" + pegasusVersion,
-    "restliNettyStandalone" : "com.linkedin.pegasus:restli-netty-standalone:" + pegasusVersion
+    "restliNettyStandalone" : "com.linkedin.pegasus:restli-netty-standalone:" + pegasusVersion,
+    "restliGuiceBridge": "com.linkedin.pegasus:restli-guice-bridge:" + pegasusVersion
   ],
   "jetty": [
           "org.eclipse.jetty:jetty-server:9.2.14.v20151106",
