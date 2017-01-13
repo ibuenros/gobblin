@@ -31,8 +31,6 @@ File getEnvironmentScript() {
 
 apply from: environmentScript
 
-
-
 buildscript {
   repositories {
     maven {
@@ -358,6 +356,8 @@ ext.externalDependency = [
   "googleApiClient": "com.google.api-client:google-api-client:" + googleVersion,
   "opencsv": "com.opencsv:opencsv:3.8"
 ];
+
+apply from: 'gradle/scripts/restli.gradle'
 
 if (!isDefaultEnvironment)
 {
