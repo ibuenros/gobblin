@@ -18,6 +18,7 @@ import com.google.inject.Guice;
 import com.google.inject.Injector;
 import com.google.inject.servlet.GuiceServletContextListener;
 import com.google.inject.servlet.ServletModule;
+import com.linkedin.r2.filter.CompressionConfig;
 import com.linkedin.r2.filter.FilterChain;
 import com.linkedin.r2.filter.FilterChains;
 import com.linkedin.r2.filter.compression.EncodingType;
@@ -30,7 +31,7 @@ import com.typesafe.config.Config;
 import com.typesafe.config.ConfigFactory;
 import gobblin.broker.BrokerConstants;
 import gobblin.broker.SharedResourcesBrokerFactory;
-import gobblin.broker.SimpleScope;
+import gobblin.broker.SimpleScopeType;
 import gobblin.broker.iface.SharedResourcesBroker;
 import java.util.Enumeration;
 import java.util.Map;
@@ -68,14 +69,14 @@ public class ThrottlingGuiceServletConfig extends GuiceServletContextListener {
         restLiConfig.setResourcePackageNames("gobblin.restli.throttling");
         bind(RestLiConfig.class).toInstance(restLiConfig);
 
-        SharedResourcesBroker<SimpleScope> broker =
-            SharedResourcesBrokerFactory.createDefaultTopLevelBroker(ThrottlingGuiceServletConfig.this._brokerConfig);
+        SharedResourcesBroker<SimpleScopeType> broker =
+            SharedResourcesBrokerFactory.createDefaultTopLevelBroker(ThrottlingGuiceServletConfig.this._brokerConfig,
+                SimpleScopeType.GLOBAL.defaultScopeInstance());
         bind(SharedResourcesBroker.class).toInstance(broker);
 
-        FilterChain filterChain = FilterChains.create(
-            new ServerCompressionFilter(new EncodingType[] { EncodingType.SNAPPY }),
+        FilterChain filterChain = FilterChains.createRestChain(
+            new ServerCompressionFilter(new EncodingType[] { EncodingType.SNAPPY }, new CompressionConfig(2048)),
             new SimpleLoggingFilter());
-        bind(FilterChain.class).toInstance(filterChain);
       }
     },
         new ServletModule()

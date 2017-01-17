@@ -24,6 +24,15 @@ subprojects {
 
       archivesBaseName = project.getParent().getName() + "-api"
       buildDir = rootProject.buildDir.toString() + "/" + archivesBaseName
+
+      dependencies {
+        dataModel externalDependency.pegasus.restliCommon
+
+        compile externalDependency.pegasus.data
+        compile externalDependency.pegasus.restliClient
+        compile externalDependency.pegasus.restliCommon
+        compile externalDependency.pegasus.pegasusCommon
+      }
     }
 
     if (project.getName().equals("server")) {
@@ -33,13 +42,14 @@ subprojects {
       archivesBaseName = project.getParent().getName() + "-server"
       buildDir = rootProject.buildDir.toString() + "/" + archivesBaseName
 
-      ext.apiProject = project(':gobblin-restli:gobblin-throttling-service:api')
+      ext.apiProject = project(project.getParent().getPath() + ':api')
 
       dependencies {
         compile project(path: project.getParent().getPath() + ":api", configuration: 'dataTemplate')
         compile project(':gobblin-utility')
 
         compile externalDependency.pegasus.restliServer
+        compile externalDependency.pegasus.restliCommon
         compile externalDependency.pegasus.restliNettyStandalone
         compile externalDependency.pegasus.restliGuiceBridge
       }
@@ -60,5 +70,18 @@ subprojects {
       }
     }
 
+  }
+
+  if (project.getName().equals("client")) {
+    apply plugin: 'pegasus'
+    apply plugin: 'java'
+
+    archivesBaseName = project.getParent().getName() + "-client"
+    buildDir = rootProject.buildDir.toString() + "/" + archivesBaseName
+
+    dependencies {
+      compile project(path: project.getParent().getPath() + ":api", configuration: 'dataTemplate')
+      compile project(path: project.getParent().getPath() + ':api', configuration: 'restClient')
+    }
   }
 }

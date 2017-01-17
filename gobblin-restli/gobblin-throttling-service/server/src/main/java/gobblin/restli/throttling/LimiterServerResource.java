@@ -17,10 +17,15 @@ import com.linkedin.restli.common.ComplexResourceKey;
 import com.linkedin.restli.common.EmptyRecord;
 import com.linkedin.restli.server.annotations.RestLiCollection;
 import com.linkedin.restli.server.resources.ComplexKeyResourceTemplate;
+
+import gobblin.broker.iface.NotConfiguredException;
 import gobblin.broker.iface.SharedResourcesBroker;
+import gobblin.util.limiter.Limiter;
+import gobblin.util.limiter.broker.SharedLimiterFactory;
+import gobblin.util.limiter.broker.SharedLimiterKey;
 
 
-@RestLiCollection(name = "permits", namespace = "gobblin.restly.throttling")
+@RestLiCollection(name = "permits", namespace = "gobblin.restli.throttling")
 public class LimiterServerResource extends ComplexKeyResourceTemplate<PermitRequest, EmptyRecord, PermitAllocation> {
 
   @Inject
@@ -28,9 +33,22 @@ public class LimiterServerResource extends ComplexKeyResourceTemplate<PermitRequ
 
   @Override
   public PermitAllocation get(ComplexResourceKey<PermitRequest, EmptyRecord> key) {
-    PermitAllocation allocation = new PermitAllocation();
-    allocation.setPermits(key.getKey().getPermits());
-    allocation.setExpiration(Long.MAX_VALUE);
-    return allocation;
+    try {
+
+      PermitRequest request = key.getKey();
+
+      Limiter limiter =
+          (Limiter) this.broker.<Limiter, SharedLimiterKey>getSharedResource(new SharedLimiterFactory(),
+              new SharedLimiterKey(request.getResource()));
+
+      limiter.acquirePermits(request.getPermits());
+
+      PermitAllocation allocation = new PermitAllocation();
+      allocation.setPermits(key.getKey().getPermits());
+      allocation.setExpiration(Long.MAX_VALUE);
+      return allocation;
+    } catch (NotConfiguredException | InterruptedException nce) {
+      throw new RuntimeException(nce);
+    }
   }
 }
